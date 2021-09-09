@@ -1,7 +1,6 @@
 defmodule GlyphConsumer do
   use Nostrum.Consumer
 
-  # TODO: https://hexdocs.pm/nostrum/gateway-intents.html#content
   alias Nostrum.Api
 
   @spec start_link :: :ignore | {:error, any} | {:ok, pid}
@@ -9,27 +8,54 @@ defmodule GlyphConsumer do
     Consumer.start_link(__MODULE__)
   end
 
-  def init do
-    command = %{
-      name: "roll",
-      description: "roll some dice",
-      options: [
-        %{type: 4, name: "dice-amount", description: "Number of dice to roll", required: true},
-        %{
-          type: 3,
-          name: "dice-modifiers",
-          description: "Modifiers to apply to roll",
-          required: false
-        }
-      ]
-    }
+  def get_commands do
+    [
+      %{
+        name: "roll",
+        description: "roll some dice",
+        options: [
+          %{type: 3, name: "dice-amount", description: "Number of dice to roll", required: true},
+          %{
+            type: 3,
+            name: "dice-modifiers",
+            description: "Modifiers to apply to roll",
+            required: false
+          }
+        ]
+      }
+    ]
+  end
 
-    Nostrum.Api.create_global_application_command(command)
+  def init do
+    apply_command_global(get_commands())
+  end
+
+  def init_guild(guild_id) do
+    apply_command_guild(guild_id, get_commands())
+  end
+
+  defp apply_command_global(command_list) do
+    Nostrum.Api.create_global_application_command(hd(command_list))
+
+    if !Enum.empty?(tl(command_list)) do
+      apply_command_global(tl(command_list))
+    end
+    :ok
+  end
+
+  defp apply_command_guild(guild_id, command_list) do
+    Nostrum.Api.create_guild_application_command(guild_id, command_list)
+
+    if !Enum.empty?(tl(command_list)) do
+      apply_command_global(tl(command_list))
+    end
+    :ok
   end
 
   def handle_event({:MESSAGE_CREATE, msg, _ws_state}) do
     words = String.split(msg.content, " ")
 
+    # TODO: implement all of the commands
     case hd(words) do
       "/roll" ->
         Api.create_message(msg.channel_id, handle_roll(tl(words)))
@@ -39,6 +65,24 @@ defmodule GlyphConsumer do
 
       "/ping" ->
         Api.create_message(msg.channel_id, "pong!")
+
+      "/help" ->
+        Api.create_message(msg.channel_id, "Not implemented yet!")
+
+      # init save and init roll
+      "/init" ->
+        Api.create_message(msg.channel_id, "Not implemented yet!")
+
+      # Roll multiple inits at the same time and stuff
+      "/rollinit" ->
+        Api.create_message(msg.channel_id, "Not implemented yet!")
+
+      # get, of the day, add
+      "/quote" ->
+        Api.create_message(msg.channel_id, "Not implemented yet!")
+
+      "/remindme" ->
+        Api.create_message(msg.channel_id, "Not implemented yet!")
 
       _ ->
         :ignore
@@ -102,11 +146,62 @@ defmodule GlyphConsumer do
 
   @spec handle_roll(nonempty_maybe_improper_list) :: binary
   def handle_roll(words) do
+    cond do
+      Regex.match?(~r/\dd\d/, hd(words)) ->
+        parse_dice_notation(hd(words)) |> roll_x_y_sided_dice() |> normal_dice_result_to_string()
+
+      Regex.match?(~r/\d/, hd(words)) ->
+        handle_construct_roll(words)
+
+      Regex.match?(~r/chance/, hd(words)) ->
+        handle_chance_die()
+    end
+  end
+
+  defp handle_chance_die() do
+    number = Enum.random(1..10)
+    text = "You rolled a **" <> Integer.to_string(number) <> "**!"
+
+    case number do
+      10 -> text <> "\nWell, that's a **success**!"
+      1 -> text <> "\nWell, that's a **critical failure**!"
+      _ -> text
+    end
+  end
+
+  def handle_construct_roll(words) do
     {dice_amount, dice_modifiers} = parse_roll_options(words)
     result = roll_construct_dice({dice_amount, dice_modifiers})
 
     result_to_string_2d(result) <>
-      get_success_message(count_successes_2d(result), count_ones_first_rolls(result), dice_amount)
+      get_success_message(
+        count_successes_2d(result),
+        count_ones_first_rolls(result),
+        dice_amount
+      )
+  end
+
+  def parse_dice_notation(text) do
+    result = String.split(text, "d")
+    {amount, _} = result |> hd() |> Integer.parse()
+    {sides, _} = result |> tl() |> hd() |> Integer.parse()
+    {amount, sides}
+  end
+
+  def roll_x_y_sided_dice({amount, sides}) do
+    if amount == 0 do
+      []
+    else
+      [Enum.random(1..sides) | roll_x_y_sided_dice({amount - 1, sides})]
+    end
+  end
+
+  defp normal_dice_result_to_string(result) do
+    if Enum.count(result) == 1 do
+      Integer.to_string(hd(result))
+    else
+      Integer.to_string(hd(result)) <> " | " <> normal_dice_result_to_string(tl(result))
+    end
   end
 
   defp get_success_message(successes, ones, dice_amount) do
