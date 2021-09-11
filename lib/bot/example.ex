@@ -1,5 +1,4 @@
-# To get this example going, run `iex -S mix` and `ExampleSupervisor.start_link`.
-# This will start the event consumer under a supervisor.
+# This is an example from the nostrum repo for programming examples
 defmodule CacheExampleSupervisor do
   use Supervisor
 
@@ -60,6 +59,7 @@ defmodule ExampleCommands do
     end
   end
 
+  # TODO Replicate this in glyph bot
   # The command that will be handling our message. Use pattern matching to
   # enforce the data shape that you accept, while also destructuring data for convenience.
   # This also helps avoiding unnecessary conditional checks in the function body,
@@ -109,5 +109,3 @@ defmodule ExampleCommands do
   # The good 'ol "nooper" (yes, as in "noose", you can't stop me)
   def command(_invalid_command), do: :noop
 end
-
-# command = %{name: "roll", description: "roll some dice", options = [%{type: 4, name: "dice-amount", description: "Number of dice to roll", required: true}]}
