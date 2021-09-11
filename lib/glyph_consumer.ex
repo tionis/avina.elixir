@@ -1,4 +1,8 @@
 defmodule GlyphConsumer do
+  @moduledoc """
+  A module that implements all logic that consumes discord events,
+  at least for the moment
+  """
   use Nostrum.Consumer
 
   alias Nostrum.Api
@@ -8,6 +12,10 @@ defmodule GlyphConsumer do
     Consumer.start_link(__MODULE__)
   end
 
+  @doc """
+    Simply returns a list of command data structures
+    to send discord for the smart command functionality
+  """
   def get_commands do
     [
       %{
@@ -26,10 +34,12 @@ defmodule GlyphConsumer do
     ]
   end
 
+  @spec init :: :ok
   def init do
     apply_command_global(get_commands())
   end
 
+  @spec init_guild(binary) :: none
   def init_guild(guild_id) do
     apply_command_guild(guild_id, get_commands())
   end
@@ -55,7 +65,6 @@ defmodule GlyphConsumer do
   def handle_event({:MESSAGE_CREATE, msg, _ws_state}) do
     words = String.split(msg.content, " ")
 
-    # TODO: implement all of the commands
     case hd(words) do
       "/roll" ->
         Api.create_message(msg.channel_id, handle_roll(tl(words)))
@@ -69,15 +78,14 @@ defmodule GlyphConsumer do
       "/help" ->
         Api.create_message(msg.channel_id, "Not implemented yet!")
 
-      # init save and init roll
       "/init" ->
-        Api.create_message(msg.channel_id, "Not implemented yet!")
+        Api.create_message(msg.channel_id, handle_initiative(tl(words), get_id_from_discord_msg(msg)))
 
-      # Roll multiple inits at the same time and stuff
+      # TODO Roll multiple inits at the same time and stuff
       "/rollinit" ->
         Api.create_message(msg.channel_id, "Not implemented yet!")
 
-      # get, of the day, add
+      # TODO get, of the day, add
       "/quote" ->
         Api.create_message(msg.channel_id, "Not implemented yet!")
 
@@ -100,6 +108,46 @@ defmodule GlyphConsumer do
   # you don't have a method definition for each event type.
   def handle_event(_event) do
     :noop
+  end
+
+  defp handle_initiative(words, user_id) do
+    case hd(words) do
+    "roll" -> handle_roll_init_mod(tl(words), user_id)
+    "save" -> handle_save_init_mod(tl(words), user_id)
+    _ -> :ignore
+    end
+  end
+
+  defp handle_roll_init_mod(words, user_id) do
+    one_based_index = Integer.parse(hd(words))
+    {:ok, init_list} = get_init_list(user_id)
+    if init_list do
+      Enum.at(init_list, one_based_index-1)
+    else
+      "No init modifier saved!"
+    end
+  end
+
+  defp get_init_list(user_id) do
+    # TODO
+    init_list = :ets.lookup(:glyph_init_mod, user_id)
+    {:ok, init_list}
+  end
+
+  defp set_init_list(user_id, init_list) do
+    # TODO
+    :ets.insert(:glyph_init_mod, {user_id, init_list})
+    {:ok}
+  end
+
+  defp handle_save_init_mod(words, user_id) do
+    init_list = Enum.map(words, fn x -> {new_value, _} = Integer.to_string(x); new_value end)
+    {:ok} = set_init_list(user_id, init_list)
+    "Saved your init values:\n" <> List.to_string(init_list)
+  end
+
+  def get_id_from_discord_msg(msg) do
+    "dc:" <> Integer.to_string((Map.get(msg, :author) |> Map.get(:id)))
   end
 
   defp handle_roll_interaction(interaction) do

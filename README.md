@@ -2,6 +2,7 @@
 
 **TODO: Add description**
 
+To add bot to server click [here](https://discord.com/oauth2/authorize?client_id=635860503041802253&permissions=8&%2Fdc&scope=bot%20applications.commands)
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed

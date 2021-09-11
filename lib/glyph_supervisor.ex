@@ -8,7 +8,7 @@ defmodule GlyphSupervisor do
   @impl true
   def init(_init_arg) do
     children = [GlyphConsumer]
-
+    :ets.new(:glyph_init_mod, [:named_table, :public]) # TODO: put this into its own process
     Supervisor.init(children, strategy: :one_for_one)
   end
 end
