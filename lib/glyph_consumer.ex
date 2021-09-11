@@ -30,6 +30,19 @@ defmodule GlyphConsumer do
             required: false
           }
         ]
+      }, # TODO finish building command below and build parser for its options
+      %{
+        name: "rollinit",
+        description: "roll many inits",
+        options: [
+          %{type: 4, name: "amount", description: "Number of dice to roll", required: true},
+          %{
+            type: 4,
+            name: "init-mods",
+            description: "Modifiers to apply to roll",
+            required: false
+          }
+        ]
       }
     ]
   end
@@ -96,9 +109,8 @@ defmodule GlyphConsumer do
           msg_preamble <> handle_initiative(tl(words), get_id_from_discord_msg(msg))
         )
 
-      # TODO Roll multiple inits at the same time and stuff
       "/rollinit" ->
-        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
+        Api.create_message(msg.channel_id, msg_preamble <> handle_mass_roll(tl words))
 
       # TODO get, of the day, add
       "/quote" ->
@@ -165,6 +177,28 @@ defmodule GlyphConsumer do
 
     {:ok} = set_init_list(user_id, init_list)
     "Saved your init values:\n" <> List.to_string(init_list)
+  end
+
+  defp handle_mass_roll(words) do
+    if Enum.count(words) > 2 do
+      raise ArgumentError
+    else
+      {amount, _} = Integer.parse(hd(words))
+      {init_mod, _} = Integer.parse(Enum.at(words,1))
+      get_mass_roll_string(amount, init_mod, 1)
+    end
+  end
+
+  defp get_mass_roll_string(amount, init_mod, index) do
+    if amount == 1 do
+      get_mass_roll_init_line(amount, index)
+    else
+      get_mass_roll_init_line(amount, index) <> "\n" <> get_mass_roll_string(amount-1, init_mod, index+1)
+    end
+  end
+
+  defp get_mass_roll_init_line(init_mod, index) do
+    Integer.to_string(index) <> ": " <> Integer.to_string(Enum.random(1..10) + init_mod)
   end
 
   def get_id_from_discord_msg(msg) do
@@ -266,18 +300,14 @@ defmodule GlyphConsumer do
   end
 
   defp normal_dice_result_to_string(result) do
-    "| " <>
-      normal_dice_result_to_string_inner(result) <>
-      " |\n" <>
-      "Sum: " <>
-      Integer.to_string(Enum.sum(result))
+    normal_dice_result_to_string_inner(result) <> " = " <> Integer.to_string(Enum.sum(result))
   end
 
   defp normal_dice_result_to_string_inner(result) do
     if Enum.count(result) == 1 do
       Integer.to_string(hd(result))
     else
-      Integer.to_string(hd(result)) <> " | " <> normal_dice_result_to_string_inner(tl(result))
+      Integer.to_string(hd(result)) <> " + " <> normal_dice_result_to_string_inner(tl(result))
     end
   end
 
