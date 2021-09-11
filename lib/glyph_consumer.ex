@@ -50,6 +50,7 @@ defmodule GlyphConsumer do
     if !Enum.empty?(tl(command_list)) do
       apply_command_global(tl(command_list))
     end
+
     :ok
   end
 
@@ -59,38 +60,52 @@ defmodule GlyphConsumer do
     if !Enum.empty?(tl(command_list)) do
       apply_command_global(tl(command_list))
     end
+
     :ok
   end
 
   def handle_event({:MESSAGE_CREATE, msg, _ws_state}) do
     words = String.split(msg.content, " ")
 
+    IO.inspect(msg)
+    author_mention = Map.get(msg, :author) |> Nostrum.Struct.User.mention()
+    msg_preamble = author_mention <> "\n"
+
     case hd(words) do
       "/roll" ->
-        Api.create_message(msg.channel_id, handle_roll(tl(words)))
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_roll(tl(words))
+        )
 
       "/r" ->
-        Api.create_message(msg.channel_id, handle_roll(tl(words)))
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_roll(tl(words))
+        )
 
       "/ping" ->
-        Api.create_message(msg.channel_id, "pong!")
+        Api.create_message(msg.channel_id, msg_preamble <> "pong!")
 
       "/help" ->
-        Api.create_message(msg.channel_id, "Not implemented yet!")
+        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       "/init" ->
-        Api.create_message(msg.channel_id, handle_initiative(tl(words), get_id_from_discord_msg(msg)))
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_initiative(tl(words), get_id_from_discord_msg(msg))
+        )
 
       # TODO Roll multiple inits at the same time and stuff
       "/rollinit" ->
-        Api.create_message(msg.channel_id, "Not implemented yet!")
+        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       # TODO get, of the day, add
       "/quote" ->
-        Api.create_message(msg.channel_id, "Not implemented yet!")
+        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       "/remindme" ->
-        Api.create_message(msg.channel_id, "Not implemented yet!")
+        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       _ ->
         :ignore
@@ -112,17 +127,18 @@ defmodule GlyphConsumer do
 
   defp handle_initiative(words, user_id) do
     case hd(words) do
-    "roll" -> handle_roll_init_mod(tl(words), user_id)
-    "save" -> handle_save_init_mod(tl(words), user_id)
-    _ -> :ignore
+      "roll" -> handle_roll_init_mod(tl(words), user_id)
+      "save" -> handle_save_init_mod(tl(words), user_id)
+      _ -> :ignore
     end
   end
 
   defp handle_roll_init_mod(words, user_id) do
     one_based_index = Integer.parse(hd(words))
     {:ok, init_list} = get_init_list(user_id)
+
     if init_list do
-      Enum.at(init_list, one_based_index-1)
+      Enum.at(init_list, one_based_index - 1)
     else
       "No init modifier saved!"
     end
@@ -141,13 +157,18 @@ defmodule GlyphConsumer do
   end
 
   defp handle_save_init_mod(words, user_id) do
-    init_list = Enum.map(words, fn x -> {new_value, _} = Integer.to_string(x); new_value end)
+    init_list =
+      Enum.map(words, fn x ->
+        {new_value, _} = Integer.to_string(x)
+        new_value
+      end)
+
     {:ok} = set_init_list(user_id, init_list)
     "Saved your init values:\n" <> List.to_string(init_list)
   end
 
   def get_id_from_discord_msg(msg) do
-    "dc:" <> Integer.to_string((Map.get(msg, :author) |> Map.get(:id)))
+    "dc:" <> Integer.to_string(Map.get(msg, :author) |> Map.get(:id))
   end
 
   defp handle_roll_interaction(interaction) do
@@ -195,10 +216,10 @@ defmodule GlyphConsumer do
   @spec handle_roll(nonempty_maybe_improper_list) :: binary
   def handle_roll(words) do
     cond do
-      Regex.match?(~r/\dd\d/, hd(words)) ->
+      Regex.match?(~r/^\d+d\d+$/, hd(words)) ->
         parse_dice_notation(hd(words)) |> roll_x_y_sided_dice() |> normal_dice_result_to_string()
 
-      Regex.match?(~r/\d/, hd(words)) ->
+      Regex.match?(~r/^\d+$/, hd(words)) ->
         handle_construct_roll(words)
 
       Regex.match?(~r/chance/, hd(words)) ->
@@ -245,10 +266,18 @@ defmodule GlyphConsumer do
   end
 
   defp normal_dice_result_to_string(result) do
+    "| " <>
+      normal_dice_result_to_string_inner(result) <>
+      " |\n" <>
+      "Sum: " <>
+      Integer.to_string(Enum.sum(result))
+  end
+
+  defp normal_dice_result_to_string_inner(result) do
     if Enum.count(result) == 1 do
       Integer.to_string(hd(result))
     else
-      Integer.to_string(hd(result)) <> " | " <> normal_dice_result_to_string(tl(result))
+      Integer.to_string(hd(result)) <> " | " <> normal_dice_result_to_string_inner(tl(result))
     end
   end
 
@@ -284,7 +313,7 @@ defmodule GlyphConsumer do
     if Enum.count(result) == 1 do
       Integer.to_string(hd(result))
     else
-      Integer.to_string(hd(result)) <> ">" <> result_to_string_1d(tl(result))
+      Integer.to_string(hd(result)) <> "➔" <> result_to_string_1d(tl(result))
     end
   end
 
