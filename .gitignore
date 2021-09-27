@@ -24,3 +24,7 @@ glyph-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# ctags
+tags
+.ctags

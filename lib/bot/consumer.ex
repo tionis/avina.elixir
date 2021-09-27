@@ -7,6 +7,8 @@ defmodule Glyph.Bot.Consumer do
 
   alias Nostrum.Api
   alias Glyph.Dice
+  alias Glyph.Data.User
+  #alias Glyph.Bot.Commands
 
   @spec start_link :: :ignore | {:error, any} | {:ok, pid}
   def start_link do
@@ -14,6 +16,8 @@ defmodule Glyph.Bot.Consumer do
   end
 
   def handle_event({:MESSAGE_CREATE, msg, _ws_state}) do
+    # This logic of this function could be replaced by
+    # multiple "command" functions using pattern matching
     words = String.split(msg.content, " ")
 
     author_mention = Map.get(msg, :author) |> Nostrum.Struct.User.mention()
@@ -41,7 +45,7 @@ defmodule Glyph.Bot.Consumer do
       "/init" ->
         Api.create_message(
           msg.channel_id,
-          msg_preamble <> handle_initiative(tl(words), get_id_from_discord_msg(msg))
+          msg_preamble <> handle_initiative(tl(words), User.get_id_from_discord_msg(msg))
         )
 
       "/rollinit" ->
@@ -90,7 +94,7 @@ defmodule Glyph.Bot.Consumer do
 
   defp handle_roll_init_mod(words, user_id) do
     one_based_index = Integer.parse(hd(words))
-    {:ok, init_list} = Glyph.Data.User.get_init_list(user_id)
+    {:ok, init_list} = User.get_init_list(user_id)
 
     if init_list do
       Enum.at(init_list, one_based_index - 1)
@@ -106,7 +110,7 @@ defmodule Glyph.Bot.Consumer do
         new_value
       end)
 
-    {:ok} = Glyph.Data.User.set_init_list(user_id, init_list)
+    {:ok} = User.set_init_list(user_id, init_list)
     "Saved your init values:\n" <> List.to_string(init_list)
   end
 
@@ -131,10 +135,6 @@ defmodule Glyph.Bot.Consumer do
 
   defp get_mass_roll_init_line(init_mod, index) do
     Integer.to_string(index) <> ": " <> Integer.to_string(Dice.roll_one_y_sided_die(10) + init_mod)
-  end
-
-  def get_id_from_discord_msg(msg) do
-    "dc:" <> Integer.to_string(Map.get(msg, :author) |> Map.get(:id))
   end
 
   defp handle_mass_roll_interaction(interaction) do

@@ -10,4 +10,8 @@ defmodule Glyph.Data.User do
     :ets.insert(:glyph_init_mod, {user_id, init_list})
     {:ok}
   end
+
+  def get_id_from_discord_msg(msg) do
+    "dc:" <> Integer.to_string(Map.get(msg, :author) |> Map.get(:id))
+  end
 end
