@@ -101,7 +101,7 @@ defmodule Glyph.Bot.Consumer do
   end
 
   defp send_admin_message(message) do
-    Api.create_message!(515128077416923152, message)
+    Api.create_message!(637639941521801227, message)
   end
 
   def get_help() do
