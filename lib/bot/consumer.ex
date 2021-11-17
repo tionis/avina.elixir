@@ -8,11 +8,35 @@ defmodule Glyph.Bot.Consumer do
   alias Nostrum.Api
   alias Glyph.Dice
   alias Glyph.Data.User
-  #alias Glyph.Bot.Commands
+  # alias Glyph.Bot.Commands
 
   @spec start_link :: :ignore | {:error, any} | {:ok, pid}
   def start_link do
     Consumer.start_link(__MODULE__)
+  end
+
+  def handle_event({:PRESENCE_UPDATE, {_guild_id, old_presence, new_presence}, _ws_state}) do
+    new_status = Map.get(new_presence, :client_status)
+    old_status = Map.get(old_presence, :client_status)
+
+    if new_status != old_status do
+      case Map.get(Map.get(new_presence, :user), :id) do
+        224471834601455626 ->
+          cond do
+            Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Joe is online!")
+            Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Joe is online on phone!")
+            true -> :noop
+          end
+          #259076782408335360 ->
+          #  cond do
+          #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
+          #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
+          #    true -> :noop
+          #  end
+      end
+    else
+      :noop
+    end
   end
 
   def handle_event({:MESSAGE_CREATE, msg, _ws_state}) do
@@ -38,6 +62,9 @@ defmodule Glyph.Bot.Consumer do
 
       "/ping" ->
         Api.create_message(msg.channel_id, msg_preamble <> "pong!")
+
+      "/channel_id" ->
+        Api.create_message!(msg.channel_id, "#{msg.channel_id}")
 
       "/help" ->
         Api.create_message(msg.channel_id, msg_preamble <> get_help())
@@ -69,19 +96,23 @@ defmodule Glyph.Bot.Consumer do
 
   # Default event handler, if you don't include this, your consumer WILL crash if
   # you don't have a method definition for each event type.
-  def handle_event(_event) do
+  def handle_event(event) do
     :noop
   end
 
+  defp send_admin_message(message) do
+    Api.create_message!(515128077416923152, message)
+  end
+
   def get_help() do
+    # " - /quote - quotator commands" <>
+    # " - /remindme $ISO_Date $Text-  sends a reminder with text at ISO Date"
     "Available Commands:\n" <>
-    " - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
-    " - /r - shortcut for /roll\n" <>
-    " - /init - main command to roll your init\n" <>
-    " - /rollinit - roll multiple inits\n" <>
-    #" - /quote - quotator commands" <>
-    #" - /remindme $ISO_Date $Text-  sends a reminder with text at ISO Date"
-    " - /ping - returns pong"
+      " - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
+      " - /r - shortcut for /roll\n" <>
+      " - /init - main command to roll your init\n" <>
+      " - /rollinit - roll multiple inits\n" <>
+      " - /ping - returns pong"
   end
 
   defp handle_initiative(words, user_id) do
@@ -134,7 +165,8 @@ defmodule Glyph.Bot.Consumer do
   end
 
   defp get_mass_roll_init_line(init_mod, index) do
-    Integer.to_string(index) <> ": " <> Integer.to_string(Dice.roll_one_y_sided_die(10) + init_mod)
+    Integer.to_string(index) <>
+      ": " <> Integer.to_string(Dice.roll_one_y_sided_die(10) + init_mod)
   end
 
   defp handle_mass_roll_interaction(interaction) do
@@ -225,8 +257,8 @@ defmodule Glyph.Bot.Consumer do
       Regex.match?(~r/chance/, hd(words)) ->
         handle_chance_die()
 
-      Regex.match?(~r/^one$/, hd(words))->
-        Dice.roll_x_y_sided_dice({1,10})
+      Regex.match?(~r/^one$/, hd(words)) ->
+        Dice.roll_x_y_sided_dice({1, 10})
         |> normal_dice_result_to_string()
     end
   end
@@ -256,8 +288,11 @@ defmodule Glyph.Bot.Consumer do
 
   defp normal_dice_result_to_string(result) do
     case Enum.count(result) do
-      1 -> Integer.to_string(hd(result))
-      _ -> normal_dice_result_to_string_inner(result) <> " = " <> Integer.to_string(Enum.sum(result))
+      1 ->
+        Integer.to_string(hd(result))
+
+      _ ->
+        normal_dice_result_to_string_inner(result) <> " = " <> Integer.to_string(Enum.sum(result))
     end
   end
 
@@ -304,5 +339,4 @@ defmodule Glyph.Bot.Consumer do
       Integer.to_string(hd(result)) <> "➔" <> result_to_string_1d(tl(result))
     end
   end
-
 end
