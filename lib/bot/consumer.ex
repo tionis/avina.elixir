@@ -98,27 +98,39 @@ defmodule Glyph.Bot.Consumer do
         Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       "/summon" ->
-        case get_voice_channel_of_msg(msg) do
-          nil -> Api.create_message(msg.channel_id, "Must be in a voice channel to summon")
-          voice_channel_id -> Voice.join_channel(msg.guild_id, voice_channel_id)
-        end
+        summon(msg)
 
-      "/leave" -> Voice.leave_channel(msg.guild_id)
-      "/unsummon" -> Voice.leave_channel(msg.guild_id)
+      "/leave" ->
+        Voice.leave_channel(msg.guild_id)
+
+      "/unsummon" ->
+        Voice.leave_channel(msg.guild_id)
 
       "/play" ->
-        IO.puts("Playing " <> Enum.at(words, 1))
         if Voice.ready?(msg.guild_id) do
           :ok = Voice.play(msg.guild_id, Enum.at(words, 1), :ytdl, realtime: false)
         else
           do_not_ready_msg(msg)
         end
 
-      "/pause" -> Voice.pause(msg.guild_id)
+      "/pause" ->
+        Voice.pause(msg.guild_id)
 
-      "/resume" -> Voice.resume(msg.guild_id)
+      "/resume" ->
+        Voice.resume(msg.guild_id)
 
-      "/stop" -> Voice.stop(msg.guild_id)
+      "/stop" ->
+        Voice.stop(msg.guild_id)
+
+      "/airhorn" ->
+        if Voice.ready?(msg.guild_id) do
+          :ok =
+            Voice.play(msg.guild_id, Path.join(:code.priv_dir(:glyph), "airhorn.mp3"), :url,
+              realtime: false
+            )
+        else
+          do_not_ready_msg(msg)
+        end
 
       _ ->
         :ignore
@@ -139,6 +151,13 @@ defmodule Glyph.Bot.Consumer do
     :noop
   end
 
+  defp summon(msg) do
+    case get_voice_channel_of_msg(msg) do
+      nil -> Api.create_message(msg.channel_id, "Must be in a voice channel to summon")
+      voice_channel_id -> Voice.join_channel(msg.guild_id, voice_channel_id)
+    end
+  end
+
   defp send_admin_message(message) do
     Api.create_message!(637_639_941_521_801_227, message)
   end
@@ -147,11 +166,19 @@ defmodule Glyph.Bot.Consumer do
     # " - /quote - quotator commands" <>
     # " - /remindme $ISO_Date $Text-  sends a reminder with text at ISO Date"
     "Available Commands:\n" <>
-      " - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
-      " - /r - shortcut for /roll\n" <>
-      " - /init - main command to roll your init\n" <>
-      " - /rollinit - roll multiple inits\n" <>
-      " - /ping - returns pong"
+    "  General Commands" <>
+    "   - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
+    "   - /r - shortcut for /roll\n" <>
+    "   - /init - main command to roll your init\n" <>
+    "   - /rollinit - roll multiple inits\n" <>
+    "   - /ping - returns pong" <>
+    "  Voice Commands" <>
+    "   - /summon - Summon bot to voice channel" <>
+    "   - /leave - Tell bot to leave voice channel" <>
+    "   - /resume - Resume playback" <>
+    "   - /pause - Pause playback" <>
+    "   - /stop - Stop playback" <>
+    "   - /airhorn - Play an airhorn sound"
   end
 
   defp handle_initiative(words, user_id) do
@@ -162,8 +189,11 @@ defmodule Glyph.Bot.Consumer do
     end
   end
 
-  def do_not_ready_msg(msg) do
-    Api.create_message(msg.channel_id, "I need to be in a voice channel for that.")
+  defp do_not_ready_msg(msg) do
+    Api.create_message(
+      msg.channel_id,
+      "I need to be in a voice channel for that.\nUse /summon for that"
+    )
   end
 
   defp handle_roll_init_mod(words, user_id) do
@@ -180,8 +210,7 @@ defmodule Glyph.Bot.Consumer do
   defp handle_save_init_mod(words, user_id) do
     init_list =
       Enum.map(words, fn x ->
-        {new_value, _} = Integer.to_string(x)
-        new_value
+        Integer.to_string(x)
       end)
 
     {:ok} = User.set_init_list(user_id, init_list)

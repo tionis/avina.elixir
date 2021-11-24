@@ -39,9 +39,9 @@ defmodule Glyph.Discord.Commands do
     apply_command_global(get_commands())
   end
 
-  @spec init_guild(binary) :: none
   def init_guild(guild_id) do
-    apply_command_guild(guild_id, get_commands())
+    :ok = apply_command_guild(guild_id, get_commands())
+    :ok
   end
 
   defp apply_command_global(command_list) do
