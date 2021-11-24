@@ -166,19 +166,19 @@ defmodule Glyph.Bot.Consumer do
     # " - /quote - quotator commands" <>
     # " - /remindme $ISO_Date $Text-  sends a reminder with text at ISO Date"
     "Available Commands\n" <>
-    "  General Commands\n" <>
-    "   - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
-    "   - /r - shortcut for /roll\n" <>
-    "   - /init - main command to roll your init\n" <>
-    "   - /rollinit - roll multiple inits\n" <>
-    "   - /ping - returns pong\n" <>
-    "  Voice Commands\n" <>
-    "   - /summon - Summon bot to voice channel\n" <>
-    "   - /leave - Tell bot to leave voice channel\n" <>
-    "   - /resume - Resume playback\n" <>
-    "   - /pause - Pause playback\n" <>
-    "   - /stop - Stop playback\n" <>
-    "   - /airhorn - Play an airhorn sound\n"
+      "  General Commands\n" <>
+      "   - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
+      "   - /r - shortcut for /roll\n" <>
+      "   - /init - main command to roll your init\n" <>
+      "   - /rollinit - roll multiple inits\n" <>
+      "   - /ping - returns pong\n" <>
+      "  Voice Commands\n" <>
+      "   - /summon - Summon bot to voice channel\n" <>
+      "   - /leave - Tell bot to leave voice channel\n" <>
+      "   - /resume - Resume playback\n" <>
+      "   - /pause - Pause playback\n" <>
+      "   - /stop - Stop playback\n" <>
+      "   - /airhorn - Play an airhorn sound\n"
   end
 
   defp handle_initiative(words, user_id) do
