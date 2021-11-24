@@ -6,6 +6,8 @@ defmodule Glyph.Bot.Consumer do
   use Nostrum.Consumer
 
   alias Nostrum.Api
+  alias Nostrum.Voice
+  alias Nostrum.Cache.GuildCache
   alias Glyph.Dice
   alias Glyph.Data.User
   # alias Glyph.Bot.Commands
@@ -15,19 +17,33 @@ defmodule Glyph.Bot.Consumer do
     Consumer.start_link(__MODULE__)
   end
 
+  def get_voice_channel_of_msg(msg) do
+    msg.guild_id
+    |> GuildCache.get!()
+    |> Map.get(:voice_states)
+    |> Enum.find(%{}, fn v -> v.user_id == msg.author.id end)
+    |> Map.get(:channel_id)
+  end
+
   def handle_event({:PRESENCE_UPDATE, {_guild_id, old_presence, new_presence}, _ws_state}) do
     new_status = Map.get(new_presence, :client_status)
     old_status = Map.get(old_presence, :client_status)
 
     if new_status != old_status do
       case Map.get(Map.get(new_presence, :user), :id) do
-        224471834601455626 ->
+        224_471_834_601_455_626 ->
           cond do
-            Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Joe is online!")
-            Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Joe is online on phone!")
-            true -> :noop
+            Map.get(new_status, :desktop, :offline) == :online ->
+              send_admin_message("Joe is online!")
+
+            Map.get(new_status, :mobile, :offline) == :online ->
+              send_admin_message("Joe is online on phone!")
+
+            true ->
+              :noop
           end
-          #259076782408335360 ->
+
+          # 259076782408335360 ->
           #  cond do
           #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
           #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
@@ -81,6 +97,29 @@ defmodule Glyph.Bot.Consumer do
       "/remindme" ->
         Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
+      "/summon" ->
+        case get_voice_channel_of_msg(msg) do
+          nil -> Api.create_message(msg.channel_id, "Must be in a voice channel to summon")
+          voice_channel_id -> Voice.join_channel(msg.guild_id, voice_channel_id)
+        end
+
+      "/leave" -> Voice.leave_channel(msg.guild_id)
+      "/unsummon" -> Voice.leave_channel(msg.guild_id)
+
+      "/play" ->
+        IO.puts("Playing " <> Enum.at(words, 1))
+        if Voice.ready?(msg.guild_id) do
+          :ok = Voice.play(msg.guild_id, Enum.at(words, 1), :ytdl, realtime: false)
+        else
+          do_not_ready_msg(msg)
+        end
+
+      "/pause" -> Voice.pause(msg.guild_id)
+
+      "/resume" -> Voice.resume(msg.guild_id)
+
+      "/stop" -> Voice.stop(msg.guild_id)
+
       _ ->
         :ignore
     end
@@ -96,12 +135,12 @@ defmodule Glyph.Bot.Consumer do
 
   # Default event handler, if you don't include this, your consumer WILL crash if
   # you don't have a method definition for each event type.
-  def handle_event(event) do
+  def handle_event(_event) do
     :noop
   end
 
   defp send_admin_message(message) do
-    Api.create_message!(637639941521801227, message)
+    Api.create_message!(637_639_941_521_801_227, message)
   end
 
   def get_help() do
@@ -121,6 +160,10 @@ defmodule Glyph.Bot.Consumer do
       "save" -> handle_save_init_mod(tl(words), user_id)
       _ -> :ignore
     end
+  end
+
+  def do_not_ready_msg(msg) do
+    Api.create_message(msg.channel_id, "I need to be in a voice channel for that.")
   end
 
   defp handle_roll_init_mod(words, user_id) do
