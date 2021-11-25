@@ -49,6 +49,7 @@ defmodule Glyph.Bot.Consumer do
           #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
           #    true -> :noop
           #  end
+          _ -> :noop
       end
     else
       :noop
