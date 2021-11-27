@@ -26,6 +26,10 @@ defmodule Glyph.Bot.Consumer do
   end
 
   def handle_event({:PRESENCE_UPDATE, {_guild_id, old_presence, new_presence}, _ws_state}) do
+    if old_presence == nil || new_presence == nil do
+      :noop
+    end
+
     new_status = Map.get(new_presence, :client_status)
     old_status = Map.get(old_presence, :client_status)
 
@@ -109,7 +113,7 @@ defmodule Glyph.Bot.Consumer do
 
       "/play" ->
         if Voice.ready?(msg.guild_id) do
-          :ok = Voice.play(msg.guild_id, Enum.at(words, 1), :ytdl, realtime: false)
+          :ok = Voice.play(msg.guild_id, Enum.at(words, 1), :ytdl, realtime: true)
         else
           do_not_ready_msg(msg)
         end
