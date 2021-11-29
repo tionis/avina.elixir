@@ -37,12 +37,16 @@ defmodule Glyph.Discord.Commands do
         options: [
           %{type: 4, name: "amount", description: "Amount of dice to throw", required: true},
           %{
-            type: 3,
-            name: "modifiers",
-            description: "Modifiers to apply to throw",
+            type: 5,
+            name: "is_edge",
+            description: "Is an edge throw?",
             required: false
           }
         ]
+      },
+      %{
+        name: "edge",
+        description: "apply edge to your last dice throw and reroll it"
       }
     ]
   end
@@ -60,7 +64,7 @@ defmodule Glyph.Discord.Commands do
     {:ok, commands} = Nostrum.Api.get_guild_application_commands(guild_id)
 
     Enum.map(commands, fn x ->
-      Nostrum.Api.delete_guild_application_command(
+      {:ok} = Nostrum.Api.delete_guild_application_command(
         Map.get(x, :application_id),
         Map.get(x, :guild_id),
         Map.get(x, :id)
@@ -72,7 +76,7 @@ defmodule Glyph.Discord.Commands do
     {:ok, commands} = Nostrum.Api.get_global_application_commands()
 
     Enum.map(commands, fn x ->
-      Nostrum.Api.delete_global_application_command(
+      {:ok} = Nostrum.Api.delete_global_application_command(
         Map.get(x, :application_id),
         Map.get(x, :id)
       )
@@ -80,7 +84,7 @@ defmodule Glyph.Discord.Commands do
   end
 
   defp apply_command_global(command_list) do
-    Nostrum.Api.create_global_application_command(hd(command_list))
+    {:ok, _} = Nostrum.Api.create_global_application_command(hd(command_list))
 
     if !Enum.empty?(tl(command_list)) do
       apply_command_global(tl(command_list))
@@ -90,7 +94,7 @@ defmodule Glyph.Discord.Commands do
   end
 
   defp apply_command_guild(guild_id, command_list) do
-    Nostrum.Api.create_guild_application_command(guild_id, command_list)
+    {:ok, _} = Nostrum.Api.create_guild_application_command(guild_id, hd(command_list))
 
     if !Enum.empty?(tl(command_list)) do
       apply_command_global(tl(command_list))

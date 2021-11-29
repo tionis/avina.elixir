@@ -96,7 +96,7 @@ defmodule Glyph.Bot.Consumer do
       "/edge" ->
         Api.create_message(
           msg.channel_id,
-          msg_preamble <> handle_shadow_edge(tl(words), user_id)
+          msg_preamble <> handle_shadow_edge(user_id)
         )
 
       "/shadowroll" ->
@@ -171,6 +171,7 @@ defmodule Glyph.Bot.Consumer do
       "roll" -> handle_roll_interaction(interaction)
       "rollinit" -> handle_mass_roll_interaction(interaction)
       "shadowroll" -> handle_shadowroll_interaction(interaction)
+      "edge" -> handle_edge_interaction(interaction)
       _ -> :ignore
     end
   end
@@ -227,10 +228,10 @@ defmodule Glyph.Bot.Consumer do
   end
 
   defp handle_roll_init_mod(words, user_id) do
-    one_based_index = Integer.parse(hd(words))
+    {one_based_index, _} = Integer.parse(hd(words))
     {:ok, init_list} = User.get_init_list(user_id)
 
-    if init_list do
+    if length(init_list) > 0 do
       Enum.at(init_list, one_based_index - 1)
     else
       "No init modifier saved!"
@@ -315,6 +316,23 @@ defmodule Glyph.Bot.Consumer do
     Api.create_interaction_response(interaction, response)
   end
 
+  defp handle_edge_interaction(interaction) do
+    message =
+      Map.get(interaction, :user)
+      |> Map.get(:id)
+      |> Integer.to_string()
+      |> handle_shadow_edge()
+
+    response = %{
+      type: 4,
+      data: %{
+        content: message
+      }
+    }
+
+    Api.create_interaction_response(interaction, response)
+  end
+
   defp handle_roll_interaction(interaction) do
     message = get_answer_for_roll_interaction(interaction)
 
@@ -329,14 +347,38 @@ defmodule Glyph.Bot.Consumer do
   end
 
   defp get_answer_for_shadowroll_interaction(interaction) do
-    IO.puts(Map.get(interaction, :data))
-    # TODO not implemented yet
+    user_id = Map.get(interaction, :user) |> Map.get(:id) |> Integer.to_string()
+    options = Map.get(interaction, :data) |> Map.get(:options)
+
+    if Enum.empty?(Enum.filter(options, fn x -> Map.get(x, :name) == "is_edge" end)) do
+      amount =
+        Enum.filter(options, fn x -> Map.get(x, :name) == "amount" end)
+        |> hd
+        |> Map.get(:value)
+
+      handle_shadow_roll([Integer.to_string(amount)], user_id)
+    else
+      amount =
+        Enum.filter(options, fn x -> Map.get(x, :name) == "amount" end)
+        |> hd
+        |> Map.get(:value)
+
+      is_edge =
+        Enum.filter(options, fn x -> Map.get(x, :name) == "is_edge" end)
+        |> hd
+        |> Map.get(:value)
+
+      if is_edge do
+        handle_shadow_roll([Integer.to_string(amount), "e"], user_id)
+      else
+        handle_shadow_roll([Integer.to_string(amount)], user_id)
+      end
+    end
   end
 
   defp get_answer_for_roll_interaction(interaction) do
-    options = Map.get(interaction, :data) |> Map.get(:options) |> hd
+    options = Map.get(interaction, :data) |> Map.get(:options)
 
-    # TODO not working because %Nostrum.Struct.ApplicationCommandInteractionDataOption does not implement enumerable protocol
     if Enum.empty?(Enum.filter(options, fn x -> Map.get(x, :name) == "dice-modifiers" end)) do
       handle_roll([
         Enum.filter(
@@ -345,14 +387,12 @@ defmodule Glyph.Bot.Consumer do
         )
         |> hd
         |> Map.get(:value)
-        |> Integer.to_string()
       ])
     else
       dice_amount =
         Enum.filter(options, fn x -> Map.get(x, :name) == "dice-amount" end)
         |> hd
         |> Map.get(:value)
-        |> Integer.to_string()
 
       dice_modifiers =
         Enum.filter(options, fn x -> Map.get(x, :name) == "dice-modifiers" end)
@@ -404,25 +444,33 @@ defmodule Glyph.Bot.Consumer do
       )
   end
 
-  def handle_shadow_edge(_words, user_id) do
+  def handle_shadow_edge(user_id) do
     data = Glyph.Data.Store.get_user_data(user_id, "last_shadow_roll")
 
     if data == nil do
       "Error: Last roll could not be processed"
     else
       {is_ok, last_roll} = JSON.decode(data)
+
       if is_ok != :ok do
         "Error: Last roll could not be processed"
       else
-        reroll_shadow_throw(Map.get(last_roll, "result"), Map.get(last_roll,"is_edge"))
+        reroll_shadow_throw(user_id, Map.get(last_roll, "result"), Map.get(last_roll, "is_edge"))
       end
     end
   end
 
-  defp reroll_shadow_throw(last_roll_list, is_edge) do
+  defp reroll_shadow_throw(user_id, last_roll_list, is_edge) do
     result = Dice.shadowrun_reroll(last_roll_list, is_edge)
+
+    Glyph.Data.Store.set_user_data(
+      user_id,
+      "last_shadow_roll",
+      JSON.encode!(%{result: result, is_edge: is_edge})
+    )
+
     "Your reroll results:\n" <>
-    result_to_string_2d(result) <>
+      result_to_string_2d(result) <>
       get_shadowrun_success_message(
         Dice.count_shadowrun_successes_2d(result),
         Dice.count_ones_first_rolls(result),
