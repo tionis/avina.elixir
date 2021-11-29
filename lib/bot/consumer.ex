@@ -47,13 +47,14 @@ defmodule Glyph.Bot.Consumer do
               :noop
           end
 
-          # 259076782408335360 ->
-          #  cond do
-          #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
-          #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
-          #    true -> :noop
-          #  end
-          _ -> :noop
+        # 259076782408335360 ->
+        #  cond do
+        #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
+        #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
+        #    true -> :noop
+        #  end
+        _ ->
+          :noop
       end
     else
       :noop
@@ -67,18 +68,41 @@ defmodule Glyph.Bot.Consumer do
 
     author_mention = Map.get(msg, :author) |> Nostrum.Struct.User.mention()
     msg_preamble = author_mention <> "\n"
+    user_id = Integer.to_string(msg.author.id)
 
     case hd(words) do
       "/roll" ->
-        Api.create_message(
-          msg.channel_id,
-          msg_preamble <> handle_roll(tl(words))
-        )
+        if length(words) == 1 do
+          Api.create_message!(msg.channel_id, "Invalid command!")
+        else
+          Api.create_message!(
+            msg.channel_id,
+            msg_preamble <> handle_roll(tl(words))
+          )
+        end
 
       "/r" ->
         Api.create_message(
           msg.channel_id,
           msg_preamble <> handle_roll(tl(words))
+        )
+
+      "/sr" ->
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_shadow_roll(tl(words), user_id)
+        )
+
+      "/edge" ->
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_shadow_edge(tl(words), user_id)
+        )
+
+      "/shadowroll" ->
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_shadow_roll(tl(words), user_id)
         )
 
       "/ping" ->
@@ -146,6 +170,7 @@ defmodule Glyph.Bot.Consumer do
     case Map.get(interaction, :data) |> Map.get(:name) do
       "roll" -> handle_roll_interaction(interaction)
       "rollinit" -> handle_mass_roll_interaction(interaction)
+      "shadowroll" -> handle_shadowroll_interaction(interaction)
       _ -> :ignore
     end
   end
@@ -277,6 +302,19 @@ defmodule Glyph.Bot.Consumer do
     handle_mass_roll([amount, init_mods])
   end
 
+  defp handle_shadowroll_interaction(interaction) do
+    message = get_answer_for_shadowroll_interaction(interaction)
+
+    response = %{
+      type: 4,
+      data: %{
+        content: message
+      }
+    }
+
+    Api.create_interaction_response(interaction, response)
+  end
+
   defp handle_roll_interaction(interaction) do
     message = get_answer_for_roll_interaction(interaction)
 
@@ -290,9 +328,15 @@ defmodule Glyph.Bot.Consumer do
     Api.create_interaction_response(interaction, response)
   end
 
-  defp get_answer_for_roll_interaction(interaction) do
-    options = Map.get(interaction, :data) |> Map.get(:options)
+  defp get_answer_for_shadowroll_interaction(interaction) do
+    IO.puts(Map.get(interaction, :data))
+    # TODO not implemented yet
+  end
 
+  defp get_answer_for_roll_interaction(interaction) do
+    options = Map.get(interaction, :data) |> Map.get(:options) |> hd
+
+    # TODO not working because %Nostrum.Struct.ApplicationCommandInteractionDataOption does not implement enumerable protocol
     if Enum.empty?(Enum.filter(options, fn x -> Map.get(x, :name) == "dice-modifiers" end)) do
       handle_roll([
         Enum.filter(
@@ -340,6 +384,52 @@ defmodule Glyph.Bot.Consumer do
     end
   end
 
+  def handle_shadow_roll(words, user_id) do
+    {amount, _} = Integer.parse(hd(words))
+    mods = Enum.at(words, 1)
+    with_edge = mods == "e" || mods == "E"
+    result = Dice.roll_shadowrun_dice({amount, with_edge})
+
+    Glyph.Data.Store.set_user_data(
+      user_id,
+      "last_shadow_roll",
+      JSON.encode!(%{result: result, is_edge: with_edge})
+    )
+
+    result_to_string_2d(result) <>
+      get_shadowrun_success_message(
+        Dice.count_shadowrun_successes_2d(result),
+        Dice.count_ones_first_rolls(result),
+        amount
+      )
+  end
+
+  def handle_shadow_edge(_words, user_id) do
+    data = Glyph.Data.Store.get_user_data(user_id, "last_shadow_roll")
+
+    if data == nil do
+      "Error: Last roll could not be processed"
+    else
+      {is_ok, last_roll} = JSON.decode(data)
+      if is_ok != :ok do
+        "Error: Last roll could not be processed"
+      else
+        reroll_shadow_throw(Map.get(last_roll, "result"), Map.get(last_roll,"is_edge"))
+      end
+    end
+  end
+
+  defp reroll_shadow_throw(last_roll_list, is_edge) do
+    result = Dice.shadowrun_reroll(last_roll_list, is_edge)
+    "Your reroll results:\n" <>
+    result_to_string_2d(result) <>
+      get_shadowrun_success_message(
+        Dice.count_shadowrun_successes_2d(result),
+        Dice.count_ones_first_rolls(result),
+        length(last_roll_list)
+      )
+  end
+
   defp handle_chance_die() do
     number = Dice.roll_one_y_sided_die(10)
     text = "You rolled a **" <> Integer.to_string(number) <> "**!"
@@ -379,6 +469,26 @@ defmodule Glyph.Bot.Consumer do
     else
       Integer.to_string(hd(result)) <> " + " <> normal_dice_result_to_string_inner(tl(result))
     end
+  end
+
+  defp get_shadowrun_success_message(successes, ones, dice_amount) do
+    crit_fail = ones >= Float.round(dice_amount / 2)
+
+    part_one =
+      cond do
+        successes == 0 -> "\nYou had **no** Hits!"
+        successes == 1 -> "\nYou had **1** Hit!"
+        true -> "\nYou had **" <> Integer.to_string(successes) <> "** Hits!"
+      end
+
+    part_two =
+      cond do
+        crit_fail -> "\nWell that's a **critical** Glitch!"
+        successes == 0 -> "\nThat's a Glitch!"
+        true -> ""
+      end
+
+    part_one <> part_two
   end
 
   defp get_success_message(successes, ones, dice_amount) do

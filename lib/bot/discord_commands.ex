@@ -1,5 +1,5 @@
 defmodule Glyph.Discord.Commands do
-@doc """
+  @doc """
     Simply returns a list of command data structures
     to send discord for the smart command functionality
   """
@@ -30,6 +30,19 @@ defmodule Glyph.Discord.Commands do
             required: true
           }
         ]
+      },
+      %{
+        name: "shadowroll",
+        description: "roll shadowrun dice",
+        options: [
+          %{type: 4, name: "amount", description: "Amount of dice to throw", required: true},
+          %{
+            type: 3,
+            name: "modifiers",
+            description: "Modifiers to apply to throw",
+            required: false
+          }
+        ]
       }
     ]
   end
@@ -40,8 +53,30 @@ defmodule Glyph.Discord.Commands do
   end
 
   def init_guild(guild_id) do
-    :ok = apply_command_guild(guild_id, get_commands())
-    :ok
+    apply_command_guild(guild_id, get_commands())
+  end
+
+  def clear_guild_commands(guild_id) do
+    {:ok, commands} = Nostrum.Api.get_guild_application_commands(guild_id)
+
+    Enum.map(commands, fn x ->
+      Nostrum.Api.delete_guild_application_command(
+        Map.get(x, :application_id),
+        Map.get(x, :guild_id),
+        Map.get(x, :id)
+      )
+    end)
+  end
+
+  def clear_commands() do
+    {:ok, commands} = Nostrum.Api.get_global_application_commands()
+
+    Enum.map(commands, fn x ->
+      Nostrum.Api.delete_global_application_command(
+        Map.get(x, :application_id),
+        Map.get(x, :id)
+      )
+    end)
   end
 
   defp apply_command_global(command_list) do

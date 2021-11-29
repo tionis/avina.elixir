@@ -25,6 +25,7 @@ defmodule Glyph.MixProject do
 	    #{:nostrum, "~> 0.4"},
       {:nostrum, github: "Kraigie/nostrum"},
       {:redix, "~> 1.1"},
+      {:json, "~> 1.4"}
       #{:castore, ">= 0.0.0"}
     ]
   end

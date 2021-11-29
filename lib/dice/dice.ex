@@ -22,6 +22,20 @@ defmodule Glyph.Dice do
     end
   end
 
+  def roll_shadowrun_die(is_edge) do
+    number = roll_one_y_sided_die(6)
+
+    if is_edge do
+      if(number == 6) do
+        [number | roll_shadowrun_die(is_edge)]
+      else
+        [number]
+      end
+    else
+      [number]
+    end
+  end
+
   def should_reroll_number(number, dice_modifiers) do
     cond do
       :no_reroll in dice_modifiers ->
@@ -56,6 +70,18 @@ defmodule Glyph.Dice do
     end
   end
 
+  def count_shadowrun_successes_2d(result) do
+    if Enum.empty?(result) do
+      0
+    else
+      count_shadowrun_successes_1d(hd(result)) + count_shadowrun_successes_2d(tl(result))
+    end
+  end
+
+  def count_shadowrun_successes_1d(result) do
+    Enum.count(result, fn x -> x >= 5 end)
+  end
+
   def count_successes_2d(result) do
     if Enum.empty?(result) do
       0
@@ -77,5 +103,22 @@ defmodule Glyph.Dice do
     else
       []
     end
+  end
+
+  def roll_shadowrun_dice({dice_amount, is_edge}) do
+    if dice_amount > 0 do
+      [roll_shadowrun_die(is_edge) | roll_shadowrun_dice({dice_amount - 1, is_edge})]
+    else
+      []
+    end
+  end
+
+  def shadowrun_reroll(last_roll_result, is_edge) do
+    Enum.map(last_roll_result, fn roll ->
+      case length(roll) do
+        1 -> [hd(roll) | roll_shadowrun_die(is_edge)]
+        _ -> roll
+      end
+    end)
   end
 end

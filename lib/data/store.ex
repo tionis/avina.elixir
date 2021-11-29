@@ -1,4 +1,6 @@
 defmodule Glyph.Data.Store do
+  # TODO enforce TTL on all values except permanent user_data
+
   defp get_conn() do
     # TODO very very inefficient code, to be replaced with solution using for example connection pooling
     {:ok, conn} = Redix.start_link(Application.fetch_env!(:glyph, :redis_uri))
@@ -19,6 +21,6 @@ defmodule Glyph.Data.Store do
   end
 
   def set_user_data(user_id, key, value) do
-    Redix.command!(get_conn(), ["GET", "user|" <> user_id <> "|data|" <> key, value])
+    Redix.command!(get_conn(), ["SET", "user|" <> user_id <> "|data|" <> key, value])
   end
 end
