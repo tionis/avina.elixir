@@ -204,11 +204,15 @@ defmodule Glyph.Bot.Consumer do
     # " - /remindme $ISO_Date $Text-  sends a reminder with text at ISO Date"
     "Available Commands\n" <>
       "  General Commands\n" <>
-      "   - /roll - roll construct dice or x y-sided die with the xdy notation\n" <>
+      "   - /roll <dice> <modifiers> - roll construct dice or x y-sided die with the xdy notation\n" <>
       "   - /r - shortcut for /roll\n" <>
       "   - /init - main command to roll your init\n" <>
       "   - /rollinit - roll multiple inits\n" <>
       "   - /ping - returns pong\n" <>
+      "   - /shadowroll <amount> <mod>- roll <amount> shadowrun dice, if <mod> contains `e` use edge" <>
+      "   - /sr - Shortcut for shadowroll" <>
+      "   - /edge - use edge retroactivly on the last dice throw, you can also use /e for this" <>
+      "   - /e - shortcut for /edge"
       "  Voice Commands\n" <>
       "   - /summon - Summon bot to voice channel\n" <>
       "   - /leave - Tell bot to leave voice channel\n" <>
