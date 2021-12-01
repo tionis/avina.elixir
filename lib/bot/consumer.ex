@@ -28,36 +28,36 @@ defmodule Glyph.Bot.Consumer do
   def handle_event({:PRESENCE_UPDATE, {_guild_id, old_presence, new_presence}, _ws_state}) do
     if old_presence == nil || new_presence == nil do
       :noop
-    end
-
-    new_status = Map.get(new_presence, :client_status)
-    old_status = Map.get(old_presence, :client_status)
-
-    if new_status != old_status do
-      case Map.get(Map.get(new_presence, :user), :id) do
-        224_471_834_601_455_626 ->
-          cond do
-            Map.get(new_status, :desktop, :offline) == :online ->
-              send_admin_message("Joe is online!")
-
-            Map.get(new_status, :mobile, :offline) == :online ->
-              send_admin_message("Joe is online on phone!")
-
-            true ->
-              :noop
-          end
-
-        # 259076782408335360 ->
-        #  cond do
-        #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
-        #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
-        #    true -> :noop
-        #  end
-        _ ->
-          :noop
-      end
     else
-      :noop
+      new_status = Map.get(new_presence, :client_status)
+      old_status = Map.get(old_presence, :client_status)
+
+      if new_status != old_status do
+        case Map.get(Map.get(new_presence, :user), :id) do
+          224_471_834_601_455_626 ->
+            cond do
+              Map.get(new_status, :desktop, :offline) == :online ->
+                send_admin_message("Joe is online!")
+
+              Map.get(new_status, :mobile, :offline) == :online ->
+                send_admin_message("Joe is online on phone!")
+
+              true ->
+                :noop
+            end
+
+          # 259076782408335360 ->
+          #  cond do
+          #    Map.get(new_status, :desktop, :offline) == :online -> send_admin_message("Tionis is online!")
+          #    Map.get(new_status, :mobile, :offline) == :online -> send_admin_message("Tionis is online on phone!")
+          #    true -> :noop
+          #  end
+          _ ->
+            :noop
+        end
+      else
+        :noop
+      end
     end
   end
 
