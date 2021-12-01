@@ -99,6 +99,12 @@ defmodule Glyph.Bot.Consumer do
           msg_preamble <> handle_shadow_edge(user_id)
         )
 
+      "/e" ->
+        Api.create_message(
+          msg.channel_id,
+          msg_preamble <> handle_shadow_edge(user_id)
+        )
+
       "/shadowroll" ->
         Api.create_message(
           msg.channel_id,
