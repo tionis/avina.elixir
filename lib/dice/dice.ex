@@ -116,7 +116,7 @@ defmodule Glyph.Dice do
   def shadowrun_reroll(last_roll_result, is_edge) do
     Enum.map(last_roll_result, fn roll ->
       case length(roll) do
-        1 -> [hd(roll) | roll_shadowrun_die(is_edge)]
+        1 -> if hd(roll) >= 5, do: roll, else: [hd(roll) | roll_shadowrun_die(is_edge)]
         _ -> roll
       end
     end)
