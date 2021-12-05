@@ -541,8 +541,8 @@ defmodule Glyph.Bot.Consumer do
 
     part_two =
       cond do
-        crit_fail -> "\nWell that's a **critical** Glitch!"
-        successes == 0 -> "\nThat's a Glitch!"
+        crit_fail && successes == 0 -> "\nWell that's a **critical** Glitch!"
+        crit_fail && successes >= 0 -> "\nThat's a Glitch!"
         true -> ""
       end
 
