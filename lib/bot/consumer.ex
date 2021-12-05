@@ -81,56 +81,71 @@ defmodule Glyph.Bot.Consumer do
           )
         end
 
+      "/badluck" -> Api.create_message!(
+          msg.channel_id,
+          msg_preamble <> handle_bad_luck()
+        )
+
+      "/bad_luck" -> Api.create_message!(
+          msg.channel_id,
+          msg_preamble <> handle_bad_luck()
+        )
+
+      "/bl" -> Api.create_message!(
+        msg.channel_id,
+        msg_preamble <> handle_bad_luck()
+      )
+
       "/r" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_roll(tl(words))
         )
 
       "/sr" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_shadow_roll(tl(words), user_id)
         )
 
       "/edge" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_shadow_edge(user_id)
         )
 
       "/e" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_shadow_edge(user_id)
         )
 
       "/shadowroll" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_shadow_roll(tl(words), user_id)
         )
 
       "/ping" ->
-        Api.create_message(msg.channel_id, msg_preamble <> "pong!")
+        Api.create_message!(msg.channel_id, msg_preamble <> "pong!")
 
       "/channel_id" ->
         Api.create_message!(msg.channel_id, "#{msg.channel_id}")
 
       "/help" ->
-        Api.create_message(msg.channel_id, msg_preamble <> get_help())
+        Api.create_message!(msg.channel_id, msg_preamble <> get_help())
 
       "/init" ->
-        Api.create_message(
+        Api.create_message!(
           msg.channel_id,
           msg_preamble <> handle_initiative(tl(words), User.get_id_from_discord_msg(msg))
         )
 
       "/rollinit" ->
-        Api.create_message(msg.channel_id, msg_preamble <> handle_mass_roll(tl(words)))
+        Api.create_message!(msg.channel_id, msg_preamble <> handle_mass_roll(tl(words)))
 
       "/remindme" ->
-        Api.create_message(msg.channel_id, msg_preamble <> "Not implemented yet!")
+        Api.create_message!(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
       "/summon" ->
         summon(msg)
@@ -178,6 +193,7 @@ defmodule Glyph.Bot.Consumer do
       "rollinit" -> handle_mass_roll_interaction(interaction)
       "shadowroll" -> handle_shadowroll_interaction(interaction)
       "edge" -> handle_edge_interaction(interaction)
+      "badluck" -> handle_badluck_interaction(interaction)
       _ -> :ignore
     end
   end
@@ -343,6 +359,17 @@ defmodule Glyph.Bot.Consumer do
     Api.create_interaction_response(interaction, response)
   end
 
+  defp handle_badluck_interaction(interaction) do
+    response = %{
+      type: 4,
+      data: %{
+        content: handle_bad_luck()
+      }
+    }
+
+    Api.create_interaction_response(interaction, response)
+  end
+
   defp handle_roll_interaction(interaction) do
     message = get_answer_for_roll_interaction(interaction)
 
@@ -410,6 +437,13 @@ defmodule Glyph.Bot.Consumer do
         |> Map.get(:value)
 
       handle_roll([dice_amount, dice_modifiers])
+    end
+  end
+
+  def handle_bad_luck() do
+    case Dice.roll_one_y_sided_die(6) do
+      1 -> "You rolled a 1\nThat's to bad!\n**No** luck for you!"
+      x -> "You rolled a "<> Integer.to_string(x) <>".\nYou've got luck!"
     end
   end
 

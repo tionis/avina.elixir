@@ -47,6 +47,10 @@ defmodule Glyph.Discord.Commands do
       %{
         name: "edge",
         description: "apply edge to your last dice throw and reroll it"
+      },
+      %{
+        name: "badluck",
+        description: "roll for bad luck, this throw is not counted for retroactivly using edge"
       }
     ]
   end
