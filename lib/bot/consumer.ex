@@ -34,7 +34,7 @@ defmodule Glyph.Bot.Consumer do
 
       if new_status != old_status do
         case Map.get(Map.get(new_presence, :user), :id) do
-          224_471_834_601_455_626 ->
+          7_704_282_912_448_839_886 ->
             cond do
               Map.get(new_status, :desktop, :offline) == :online ->
                 send_admin_message("Joe is online!")
