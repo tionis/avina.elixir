@@ -102,6 +102,19 @@ defmodule Glyph.Bot.Consumer do
           msg_preamble <> handle_roll(tl(words))
         )
 
+      "roll" ->
+        Api.create_message!(
+          msg.channel_id,
+          msg_preamble <> handle_roll(tl(words))
+        )
+
+      "r" ->
+        Api.create_message!(
+          msg.channel_id,
+          msg_preamble <> handle_roll(tl(words))
+        )
+
+
       "/sr" ->
         Api.create_message!(
           msg.channel_id,
@@ -147,32 +160,32 @@ defmodule Glyph.Bot.Consumer do
       "/remindme" ->
         Api.create_message!(msg.channel_id, msg_preamble <> "Not implemented yet!")
 
-      "!summon" ->
+      "gsummon" ->
         summon(msg)
 
-      "!leave" ->
+      "gleave" ->
         Voice.leave_channel(msg.guild_id)
 
-      "!unsummon" ->
+      "gunsummon" ->
         Voice.leave_channel(msg.guild_id)
 
-      "!play" ->
+      "gplay" ->
         if Voice.ready?(msg.guild_id) do
           :ok = Voice.play(msg.guild_id, Enum.at(words, 1), :ytdl, realtime: true)
         else
           do_not_ready_msg(msg)
         end
 
-      "!pause" ->
+      "gpause" ->
         Voice.pause(msg.guild_id)
 
-      "!resume" ->
+      "gresume" ->
         Voice.resume(msg.guild_id)
 
-      "!stop" ->
+      "gstop" ->
         Voice.stop(msg.guild_id)
 
-      "!airhorn" ->
+      "gairhorn" ->
         if Voice.ready?(msg.guild_id) do
           :ok =
             Voice.play(msg.guild_id, Path.join(:code.priv_dir(:glyph), "airhorn.mp3"), :url,
