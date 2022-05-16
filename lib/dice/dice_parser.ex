@@ -12,6 +12,7 @@ defmodule Glyph.Dice_Parser do
         []
         |> check_nine_again(dice_modifier_string)
         |> check_eight_again(dice_modifier_string)
+        |> check_seven_again(dice_modifier_string)
         |> check_rote_quality(dice_modifier_string)
         |> check_no_reroll(dice_modifier_string)
 
@@ -30,6 +31,14 @@ defmodule Glyph.Dice_Parser do
   defp check_eight_again(dice_modifiers, dice_modifier_string) do
     if dice_modifier_string =~ "8" do
       [:eight_again | List.delete(dice_modifiers, :nine_again)]
+    else
+      dice_modifiers
+    end
+  end
+
+  defp check_seven_again(dice_modifiers, dice_modifier_string) do
+    if dice_modifier_string =~ "7" do
+      [:seven_again | List.delete(List.delete(dice_modifiers, :eight_again), :nine_again)]
     else
       dice_modifiers
     end

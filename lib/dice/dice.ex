@@ -50,6 +50,9 @@ defmodule Glyph.Dice do
       :eight_again in dice_modifiers && number >= 8 ->
         {true, []}
 
+      :seven_again in dice_modifiers && number >= 7 ->
+        {true, []}
+
       :rote_quality in dice_modifiers && :rote_quality_used not in dice_modifiers ->
         {true, [:rote_quality_used]}
 

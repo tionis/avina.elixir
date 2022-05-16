@@ -1,0 +1,26 @@
+pipeline:
+  build:
+    image: elixir
+    commands:
+      - mix local.hex --force 
+      - mix deps.get
+      - MIX_ENV=prod mix release
+
+  upload:
+    image: docker pull eeacms/rsync
+    secrets: [ ssh_key ]
+    commands:
+      - mkdir -p .ssh
+      - echo "$SSH_KEY" > .ssh/id_ed25519
+      - rsync -a --info=progress2 _build/prod/rel/glyph citadel:.artifacts/
+
+  deploy:
+    image: appleboy/drone-ssh
+    settings:
+      host: citadel.tasadar.net
+      username: tionis
+      port: 22
+      key:
+        from_secret: ssh_key
+    script:
+      - .config/docker/citadel/glyph/deploy.sh
