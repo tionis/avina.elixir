@@ -1,7 +1,8 @@
 pipeline:
   build:
-    image: elixir
+    image: elixir:alpine
     commands:
+      - apk add git rebar
       - mix local.hex --force 
       - mix deps.get
       - MIX_ENV=prod mix release
