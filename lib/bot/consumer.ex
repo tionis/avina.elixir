@@ -1,4 +1,4 @@
-defmodule Glyph.Bot.Consumer do
+defmodule Avina.Bot.Consumer do
   @moduledoc """
   A module that implements all logic that consumes discord events,
   at least for the moment
@@ -8,9 +8,9 @@ defmodule Glyph.Bot.Consumer do
   alias Nostrum.Api
   alias Nostrum.Voice
   alias Nostrum.Cache.GuildCache
-  alias Glyph.Dice
-  alias Glyph.Data.User
-  # alias Glyph.Bot.Commands
+  alias Avina.Dice
+  alias Avina.Data.User
+  # alias Avina.Bot.Commands
 
   @spec start_link :: :ignore | {:error, any} | {:ok, pid}
   def start_link do
@@ -188,7 +188,7 @@ defmodule Glyph.Bot.Consumer do
       "gairhorn" ->
         if Voice.ready?(msg.guild_id) do
           :ok =
-            Voice.play(msg.guild_id, Path.join(:code.priv_dir(:glyph), "airhorn.mp3"), :url,
+            Voice.play(msg.guild_id, Path.join(:code.priv_dir(:avina), "airhorn.mp3"), :url,
               realtime: false
             )
         else
@@ -465,7 +465,7 @@ defmodule Glyph.Bot.Consumer do
     cond do
       Regex.match?(~r/^\d+d\d+$/, hd(words)) ->
         hd(words)
-        |> Glyph.Dice_Parser.parse_dice_notation()
+        |> Avina.Dice_Parser.parse_dice_notation()
         |> Dice.roll_x_y_sided_dice()
         |> normal_dice_result_to_string()
 
@@ -487,7 +487,7 @@ defmodule Glyph.Bot.Consumer do
     with_edge = mods == "e" || mods == "E"
     result = Dice.roll_shadowrun_dice({amount, with_edge})
 
-    Glyph.Data.Store.set_user_data(
+    Avina.Data.Store.set_user_data(
       user_id,
       "last_shadow_roll",
       JSON.encode!(%{result: result, is_edge: with_edge})
@@ -502,7 +502,7 @@ defmodule Glyph.Bot.Consumer do
   end
 
   def handle_shadow_edge(user_id) do
-    data = Glyph.Data.Store.get_user_data(user_id, "last_shadow_roll")
+    data = Avina.Data.Store.get_user_data(user_id, "last_shadow_roll")
 
     if data == nil do
       "Error: Last roll could not be processed"
@@ -520,7 +520,7 @@ defmodule Glyph.Bot.Consumer do
   defp reroll_shadow_throw(user_id, last_roll_list, is_edge) do
     result = Dice.shadowrun_reroll(last_roll_list, is_edge)
 
-    Glyph.Data.Store.set_user_data(
+    Avina.Data.Store.set_user_data(
       user_id,
       "last_shadow_roll",
       JSON.encode!(%{result: result, is_edge: is_edge})
@@ -547,7 +547,7 @@ defmodule Glyph.Bot.Consumer do
   end
 
   def handle_construct_roll(words) do
-    {dice_amount, dice_modifiers} = Glyph.Dice_Parser.parse_roll_options(words)
+    {dice_amount, dice_modifiers} = Avina.Dice_Parser.parse_roll_options(words)
     result = Dice.roll_construct_dice({dice_amount, dice_modifiers})
 
     result_to_string_2d(result) <>

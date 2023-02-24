@@ -1,3 +1,3 @@
-defmodule Glyph.Bot.Commands do
+defmodule Avina.Bot.Commands do
 
 end

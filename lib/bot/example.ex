@@ -59,7 +59,7 @@ defmodule ExampleCommands do
     end
   end
 
-  # TODO Replicate this in glyph bot
+  # TODO Replicate this in avina bot
   # The command that will be handling our message. Use pattern matching to
   # enforce the data shape that you accept, while also destructuring data for convenience.
   # This also helps avoiding unnecessary conditional checks in the function body,

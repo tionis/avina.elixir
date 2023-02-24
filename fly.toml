@@ -1,6 +1,6 @@
-# fly.toml file generated for glyph on 2021-11-18T23:52:17+01:00
+# fly.toml file generated for avina on 2021-11-18T23:52:17+01:00
 
-app = "glyph"
+app = "avina"
 
 kill_signal = "SIGINT"
 kill_timeout = 5

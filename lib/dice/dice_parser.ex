@@ -1,4 +1,4 @@
-defmodule Glyph.Dice_Parser do
+defmodule Avina.Dice_Parser do
   @spec parse_roll_options(nonempty_maybe_improper_list) :: {integer, list}
   def parse_roll_options(words) do
     {dice_amount, ""} = Integer.parse(hd(words))

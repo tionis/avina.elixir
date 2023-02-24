@@ -1,4 +1,4 @@
-defmodule Glyph.Discord.Commands do
+defmodule Avina.Discord.Commands do
   @doc """
     Simply returns a list of command data structures
     to send discord for the smart command functionality

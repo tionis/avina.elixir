@@ -1,4 +1,4 @@
-defmodule Glyph.Dice do
+defmodule Avina.Dice do
   def roll_one_y_sided_die(sides) do
     Enum.random(1..sides)
   end

@@ -1,4 +1,4 @@
-defmodule Glyph.Supervisor do
+defmodule Avina.Supervisor do
   use Supervisor
 
   def start_link(args) do
@@ -7,8 +7,8 @@ defmodule Glyph.Supervisor do
 
   @impl true
   def init(_init_arg) do
-    children = [Glyph.Bot.Consumer]
-    :ets.new(:glyph_init_mod, [:named_table, :public]) # TODO: put this into its own process
+    children = [Avina.Bot.Consumer]
+    :ets.new(:avina_init_mod, [:named_table, :public]) # TODO: put this into its own process
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

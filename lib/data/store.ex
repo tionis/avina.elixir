@@ -1,10 +1,10 @@
-defmodule Glyph.Data.Store do
+defmodule Avina.Data.Store do
   # TODO enforce TTL on all values except permanent user_data
 
   defp get_conn() do
     # TODO very very inefficient code, to be replaced with solution using for example connection pooling
-    {:ok, conn} = Redix.start_link(Application.fetch_env!(:glyph, :redis_uri))
-    "OK" = Redix.command!(conn, ["AUTH", Application.fetch_env!(:glyph, :redis_password)])
+    {:ok, conn} = Redix.start_link(Application.fetch_env!(:avina, :redis_uri))
+    "OK" = Redix.command!(conn, ["AUTH", Application.fetch_env!(:avina, :redis_password)])
     conn
   end
 

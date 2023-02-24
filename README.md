@@ -1,4 +1,4 @@
-# Glyph
+# Avina
 
 A very simple bot I use for my discord server.
 

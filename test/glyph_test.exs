@@ -1,4 +1,4 @@
-defmodule GlyphTest do
+defmodule AvinaTest do
   use ExUnit.Case
-  doctest Glyph
+  doctest Avina
 end
